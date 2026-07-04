@@ -89,12 +89,58 @@
 
         .ql-toolbar.ql-snow { border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); border-radius: 8px 8px 0 0; }
         .ql-container.ql-snow { border: 1px solid rgba(255,255,255,0.1); border-top: none; border-radius: 0 0 8px 8px; background: rgba(255,255,255,0.02); color: var(--text-main); font-family: inherit; font-size: 16px; }
-        .ql-editor { min-height: 120px; }
+        .ql-editor {
+            min-height: 380px;
+            max-height: 70vh;
+            overflow-y: auto;
+            resize: vertical;
+            font-size: 16px;
+            padding: 20px;
+        }
+        .ql-editor.ql-blank::before { color: var(--text-muted); font-style: normal; }
         .ql-snow .ql-stroke { stroke: var(--text-muted); }
         .ql-snow .ql-fill, .ql-snow .ql-stroke.ql-fill { fill: var(--text-muted); }
         .ql-snow .ql-picker { color: var(--text-muted); }
+        .ql-snow .ql-picker-options { background: var(--card-bg); }
         .rich-text-content a { color: var(--accent); }
         .rich-text-content blockquote { border-left: 4px solid var(--accent); padding-left: 15px; margin-left: 0; color: var(--text-muted); font-style: italic; }
+        .rich-text-content table, .ql-editor table {
+            border-collapse: collapse; width: 100%; margin: 12px 0;
+        }
+        .rich-text-content table td, .rich-text-content table th,
+        .ql-editor table td, .ql-editor table th {
+            border: 1px solid rgba(255,255,255,0.2); padding: 8px 10px; text-align: left;
+        }
+        .rich-text-content pre, .ql-editor pre.ql-syntax {
+            background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; overflow-x: auto;
+        }
+
+        /* Editor toolbar extras: word count + insert table + import */
+        .editor-wrap { position: relative; }
+        .editor-toolbar-extra {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px; margin-top: 8px;
+        }
+        .editor-toolbar-extra .left-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+        .ghost-btn {
+            background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);
+            padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold;
+            cursor: pointer; transition: 0.2s;
+        }
+        .ghost-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .word-count { font-size: 12px; color: var(--text-muted); }
+        .import-status { font-size: 12px; color: var(--accent); margin-left: 6px; }
+
+        /* Search / filter bar */
+        .filter-bar {
+            display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 20px 0;
+        }
+        .filter-bar .form-input { flex: 1; min-width: 200px; }
+        .tag-pill {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted);
+            padding: 5px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
+        }
+        .tag-pill.active { background: var(--accent); color: var(--bg-dark); border-color: var(--accent); }
     </style>
 </head>
 <body>
@@ -117,7 +163,20 @@
                 <form id="project-form" style="display: flex; flex-direction: column; gap: 12px;">
                     <input type="text" id="proj-title" class="form-input" placeholder="Project Title" required>
                     <input type="url" id="proj-link" class="form-input" placeholder="Live Link" required>
-                    <div id="proj-editor"></div>
+                    <div class="editor-wrap">
+                        <div id="proj-editor"></div>
+                        <div class="editor-toolbar-extra">
+                            <div class="left-tools">
+                                <button type="button" class="ghost-btn" id="proj-insert-table">▦ Insert Table</button>
+                                <label class="ghost-btn" style="cursor:pointer; display:inline-block;">
+                                    📄 Import .docx
+                                    <input type="file" id="proj-docx-import" accept=".docx" style="display:none;">
+                                </label>
+                                <span class="import-status" id="proj-import-status"></span>
+                            </div>
+                            <span class="word-count" id="proj-word-count">0 words</span>
+                        </div>
+                    </div>
                     <button type="submit" class="btn" style="width: 150px;">Post Project</button>
                     <button type="button" id="proj-cancel" class="btn" style="display: none; width: 100px; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);">Cancel</button>
                 </form>
@@ -131,10 +190,26 @@
                 <h3 style="margin-top: 0;" id="blog-header">Post a New Blog</h3>
                 <form id="blog-form" style="display: flex; flex-direction: column; gap: 12px;">
                     <input type="text" id="blog-title" class="form-input" placeholder="Blog Title" required>
-                    <div id="blog-editor"></div>
+                    <div class="editor-wrap">
+                        <div id="blog-editor"></div>
+                        <div class="editor-toolbar-extra">
+                            <div class="left-tools">
+                                <button type="button" class="ghost-btn" id="blog-insert-table">▦ Insert Table</button>
+                                <label class="ghost-btn" style="cursor:pointer; display:inline-block;">
+                                    📄 Import .docx
+                                    <input type="file" id="blog-docx-import" accept=".docx" style="display:none;">
+                                </label>
+                                <span class="import-status" id="blog-import-status"></span>
+                            </div>
+                            <span class="word-count" id="blog-word-count">0 words</span>
+                        </div>
+                    </div>
                     <button type="submit" class="btn" style="width: 150px;">Post Blog</button>
                     <button type="button" id="blog-cancel" class="btn" style="display: none; width: 100px; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);">Cancel</button>
                 </form>
+            </div>
+            <div class="filter-bar">
+                <input type="text" id="blog-search" class="form-input" placeholder="🔍 Search blogs by title or content...">
             </div>
             <div id="dynamic-blogs"><p>Loading blogs...</p></div>
         </div>
@@ -148,11 +223,28 @@
                     <input type="text" id="rev-tag" class="form-input" placeholder="Tag" required>
                     <input type="text" id="rev-rating" class="form-input" placeholder="Rating" required>
                     <input type="url" id="rev-image" class="form-input" placeholder="Cover Image URL">
-                    <div id="rev-editor"></div>
+                    <div class="editor-wrap">
+                        <div id="rev-editor"></div>
+                        <div class="editor-toolbar-extra">
+                            <div class="left-tools">
+                                <button type="button" class="ghost-btn" id="rev-insert-table">▦ Insert Table</button>
+                                <label class="ghost-btn" style="cursor:pointer; display:inline-block;">
+                                    📄 Import .docx
+                                    <input type="file" id="rev-docx-import" accept=".docx" style="display:none;">
+                                </label>
+                                <span class="import-status" id="rev-import-status"></span>
+                            </div>
+                            <span class="word-count" id="rev-word-count">0 words</span>
+                        </div>
+                    </div>
                     <button type="submit" class="btn" style="width: 150px;">Post Review</button>
                     <button type="button" id="rev-cancel" class="btn" style="display: none; width: 100px; background: transparent; border: 1px solid var(--text-muted); color: var(--text-muted);">Cancel</button>
                 </form>
             </div>
+            <div class="filter-bar">
+                <input type="text" id="rev-search" class="form-input" placeholder="🔍 Search reviews by title...">
+            </div>
+            <div class="filter-bar" id="rev-tag-filters"></div>
             <div class="review-grid" id="dynamic-reviews"><p>Loading reviews...</p></div>
         </div>
         
@@ -173,11 +265,119 @@
     </script>
 
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <!-- Mammoth.js: converts uploaded .docx files into HTML for the editor -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <script>
-        const toolbarOptions = [['bold', 'italic', 'underline', 'strike'], ['blockquote', 'code-block'], [{ 'header': 1 }, { 'header': 2 }], [{ 'list': 'ordered'}, { 'list': 'bullet' }], ['link', 'clean']];
+        const toolbarOptions = [
+            [{ 'header': [1, 2, 3, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'color': [] }, { 'background': [] }],
+            ['blockquote', 'code-block'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'indent': '-1' }, { 'indent': '+1' }],
+            [{ 'align': [] }],
+            ['link'],
+            ['clean']
+        ];
         const quillProj = new Quill('#proj-editor', { theme: 'snow', modules: { toolbar: toolbarOptions } });
         const quillBlog = new Quill('#blog-editor', { theme: 'snow', modules: { toolbar: toolbarOptions } });
         const quillRev = new Quill('#rev-editor', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+
+        // --- Word count ---
+        function updateWordCount(quill, elId) {
+            const text = quill.getText().trim();
+            const words = text.length ? text.split(/\s+/).length : 0;
+            document.getElementById(elId).innerText = `${words} word${words === 1 ? '' : 's'}`;
+        }
+        window.updateWordCount = updateWordCount;
+        quillProj.on('text-change', () => updateWordCount(quillProj, 'proj-word-count'));
+        quillBlog.on('text-change', () => updateWordCount(quillBlog, 'blog-word-count'));
+        quillRev.on('text-change', () => updateWordCount(quillRev, 'rev-word-count'));
+
+        // --- Insert Table ---
+        function buildTableHTML(rows, cols) {
+            let html = '<table><tbody>';
+            for (let r = 0; r < rows; r++) {
+                html += '<tr>';
+                for (let c = 0; c < cols; c++) {
+                    html += r === 0 ? '<th>Header</th>' : '<td>Cell</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table><p><br></p>';
+            return html;
+        }
+
+        function insertTableInto(quill) {
+            const input = prompt('Table size as rows,columns (e.g. 3,3):', '3,3');
+            if (!input) return;
+            const parts = input.split(',').map(n => parseInt(n.trim(), 10));
+            const rows = parts[0], cols = parts[1];
+            if (!rows || !cols || rows < 1 || cols < 1 || rows > 20 || cols > 10) {
+                alert('Please enter a valid size, e.g. 3,3 (max 20 rows, 10 columns).');
+                return;
+            }
+            const range = quill.getSelection(true) || { index: quill.getLength() };
+            quill.clipboard.dangerouslyPasteHTML(range.index, buildTableHTML(rows, cols), 'user');
+        }
+
+        document.getElementById('proj-insert-table').addEventListener('click', () => insertTableInto(quillProj));
+        document.getElementById('blog-insert-table').addEventListener('click', () => insertTableInto(quillBlog));
+        document.getElementById('rev-insert-table').addEventListener('click', () => insertTableInto(quillRev));
+
+        // --- Import a pre-written .docx file straight into the editor ---
+        function handleDocxImport(file, quill, titleInputId, statusElId) {
+            const statusEl = document.getElementById(statusElId);
+            statusEl.innerText = 'Importing...';
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                mammoth.convertToHtml({ arrayBuffer: e.target.result })
+                    .then((result) => {
+                        quill.root.innerHTML = result.value;
+                        updateWordCount(quill, quill === quillProj ? 'proj-word-count' : (quill === quillBlog ? 'blog-word-count' : 'rev-word-count'));
+
+                        // Auto-fill the title from the first heading if the title field is empty
+                        const titleInput = document.getElementById(titleInputId);
+                        if (titleInput && !titleInput.value.trim()) {
+                            const temp = document.createElement('div');
+                            temp.innerHTML = result.value;
+                            const heading = temp.querySelector('h1, h2, h3');
+                            if (heading && heading.textContent.trim()) {
+                                titleInput.value = heading.textContent.trim();
+                            }
+                        }
+
+                        statusEl.innerText = '✓ Imported';
+                        if (result.messages && result.messages.length) {
+                            console.log('Mammoth conversion notes:', result.messages);
+                        }
+                        setTimeout(() => { statusEl.innerText = ''; }, 4000);
+                    })
+                    .catch((err) => {
+                        console.error(err);
+                        statusEl.innerText = '';
+                        alert('Could not import this .docx file: ' + err.message);
+                    });
+            };
+            reader.onerror = () => { statusEl.innerText = ''; alert('Could not read the file.'); };
+            reader.readAsArrayBuffer(file);
+        }
+
+        document.getElementById('proj-docx-import').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleDocxImport(file, quillProj, 'proj-title', 'proj-import-status');
+            e.target.value = '';
+        });
+        document.getElementById('blog-docx-import').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleDocxImport(file, quillBlog, 'blog-title', 'blog-import-status');
+            e.target.value = '';
+        });
+        document.getElementById('rev-docx-import').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) handleDocxImport(file, quillRev, 'rev-title', 'rev-import-status');
+            e.target.value = '';
+        });
     </script>
 
     <script type="module">
@@ -220,9 +420,9 @@
             const docSnap = await getDoc(doc(db, col, id));
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (col === 'projects') { document.getElementById('proj-title').value = data.title; document.getElementById('proj-link').value = data.link; quillProj.root.innerHTML = data.desc; setupEditMode('project-form', 'proj-header', 'proj-cancel', 'Edit Project', id); }
-                else if (col === 'blogs') { document.getElementById('blog-title').value = data.title; quillBlog.root.innerHTML = data.content; setupEditMode('blog-form', 'blog-header', 'blog-cancel', 'Edit Blog', id); }
-                else if (col === 'reviews') { document.getElementById('rev-title').value = data.title; document.getElementById('rev-tag').value = data.tag; document.getElementById('rev-rating').value = data.rating; document.getElementById('rev-image').value = data.imageUrl; quillRev.root.innerHTML = data.content; setupEditMode('review-form', 'rev-header', 'rev-cancel', 'Edit Review', id); }
+                if (col === 'projects') { document.getElementById('proj-title').value = data.title; document.getElementById('proj-link').value = data.link; quillProj.root.innerHTML = data.desc; setupEditMode('project-form', 'proj-header', 'proj-cancel', 'Edit Project', id); window.updateWordCount(quillProj, 'proj-word-count'); }
+                else if (col === 'blogs') { document.getElementById('blog-title').value = data.title; quillBlog.root.innerHTML = data.content; setupEditMode('blog-form', 'blog-header', 'blog-cancel', 'Edit Blog', id); window.updateWordCount(quillBlog, 'blog-word-count'); }
+                else if (col === 'reviews') { document.getElementById('rev-title').value = data.title; document.getElementById('rev-tag').value = data.tag; document.getElementById('rev-rating').value = data.rating; document.getElementById('rev-image').value = data.imageUrl; quillRev.root.innerHTML = data.content; setupEditMode('review-form', 'rev-header', 'rev-cancel', 'Edit Review', id); window.updateWordCount(quillRev, 'rev-word-count'); }
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         };
@@ -237,6 +437,10 @@
             const form = document.getElementById(formId); form.removeAttribute('data-edit-id'); form.reset(); q.setContents([]);
             document.getElementById(headerId).innerText = defaultText; form.querySelector('button[type="submit"]').innerText = 'Post';
             document.getElementById(cancelId).style.display = 'none';
+            if (window.updateWordCount) {
+                const wcId = formId === 'project-form' ? 'proj-word-count' : (formId === 'blog-form' ? 'blog-word-count' : 'rev-word-count');
+                window.updateWordCount(q, wcId);
+            }
         }
 
         document.getElementById('proj-cancel').addEventListener('click', () => resetFormMode('project-form', 'proj-header', 'proj-cancel', 'Post a New Project', quillProj));
@@ -253,15 +457,77 @@
         document.getElementById('blog-form').addEventListener('submit', (e) => handleSub(e, 'blog-form', 'blogs', {title: document.getElementById('blog-title').value, content: quillBlog.root.innerHTML, date: new Date().toLocaleDateString()}, 'blog-header', 'blog-cancel', quillBlog));
         document.getElementById('review-form').addEventListener('submit', (e) => handleSub(e, 'review-form', 'reviews', {title: document.getElementById('rev-title').value, tag: document.getElementById('rev-tag').value, rating: document.getElementById('rev-rating').value, imageUrl: document.getElementById('rev-image').value, content: quillRev.root.innerHTML}, 'rev-header', 'rev-cancel', quillRev));
 
+        let allBlogs = [];
+        let allReviews = [];
+        let activeReviewTag = null;
+
+        function blogCardHTML(d, id, c) {
+            return `<div class="card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('${c}','${id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('${c}','${id}')">Delete</button></div>` : ''}<small style="color: var(--accent);">${d.date}</small><h3>${d.title}</h3><div class="rich-text-content">${d.content}</div></div>`;
+        }
+
+        function reviewCardHTML(d, id, c) {
+            return `<div class="review-card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('${c}','${id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('${c}','${id}')">Delete</button></div>` : ''}<img src="${d.imageUrl}" alt="${d.title}"><div class="review-content"><span class="tag">${d.tag}</span><h3>${d.title}</h3><div class="rating">${d.rating}</div><div class="rich-text-content">${d.content}</div></div></div>`;
+        }
+
+        function renderBlogs() {
+            const grid = document.getElementById('dynamic-blogs');
+            const searchTerm = (document.getElementById('blog-search').value || '').toLowerCase();
+            const filtered = allBlogs.filter(({ data }) => {
+                if (!searchTerm) return true;
+                const plainText = (data.title + ' ' + data.content).toLowerCase();
+                return plainText.includes(searchTerm);
+            });
+            grid.innerHTML = filtered.length ? '' : '<p style="color: var(--text-muted);">No blogs match your search.</p>';
+            filtered.forEach(({ data, id }) => grid.innerHTML += blogCardHTML(data, id, 'blogs'));
+        }
+
+        function renderReviewTagFilters() {
+            const container = document.getElementById('rev-tag-filters');
+            const tags = [...new Set(allReviews.map(({ data }) => data.tag).filter(Boolean))];
+            if (!tags.length) { container.innerHTML = ''; return; }
+            container.innerHTML = tags.map(tag =>
+                `<span class="tag-pill ${activeReviewTag === tag ? 'active' : ''}" data-tag="${tag}">${tag}</span>`
+            ).join('') + (activeReviewTag ? `<span class="tag-pill" id="rev-clear-filter">✕ Clear</span>` : '');
+
+            container.querySelectorAll('.tag-pill[data-tag]').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    activeReviewTag = activeReviewTag === pill.dataset.tag ? null : pill.dataset.tag;
+                    renderReviewTagFilters();
+                    renderReviews();
+                });
+            });
+            const clearBtn = document.getElementById('rev-clear-filter');
+            if (clearBtn) clearBtn.addEventListener('click', () => { activeReviewTag = null; renderReviewTagFilters(); renderReviews(); });
+        }
+
+        function renderReviews() {
+            const grid = document.getElementById('dynamic-reviews');
+            const searchTerm = (document.getElementById('rev-search').value || '').toLowerCase();
+            const filtered = allReviews.filter(({ data }) => {
+                const matchesSearch = !searchTerm || data.title.toLowerCase().includes(searchTerm);
+                const matchesTag = !activeReviewTag || data.tag === activeReviewTag;
+                return matchesSearch && matchesTag;
+            });
+            grid.innerHTML = filtered.length ? '' : '<p style="color: var(--text-muted);">No reviews match your search.</p>';
+            filtered.forEach(({ data, id }) => grid.innerHTML += reviewCardHTML(data, id, 'reviews'));
+        }
+
+        document.getElementById('blog-search').addEventListener('input', renderBlogs);
+        document.getElementById('rev-search').addEventListener('input', renderReviews);
+
         async function loadAllData() {
-            const updateGrid = async (id, col, template) => {
-                const grid = document.getElementById(id); grid.innerHTML = '';
-                const snap = await getDocs(query(collection(db, col), orderBy("timestamp", "desc")));
-                snap.forEach(doc => grid.innerHTML += template(doc.data(), doc.id, col));
-            };
-            await updateGrid('dynamic-projects', 'projects', (d, id, c) => `<div class="card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('${c}','${id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('${c}','${id}')">Delete</button></div>` : ''}<h3>${d.title}</h3><div class="rich-text-content">${d.desc}</div><a href="${d.link}" target="_blank" class="btn">View Live</a></div>`);
-            await updateGrid('dynamic-blogs', 'blogs', (d, id, c) => `<div class="card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('${c}','${id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('${c}','${id}')">Delete</button></div>` : ''}<small style="color: var(--accent);">${d.date}</small><h3>${d.title}</h3><div class="rich-text-content">${d.content}</div></div>`);
-            await updateGrid('dynamic-reviews', 'reviews', (d, id, c) => `<div class="review-card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('${c}','${id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('${c}','${id}')">Delete</button></div>` : ''}<img src="${d.imageUrl}" alt="${d.title}"><div class="review-content"><span class="tag">${d.tag}</span><h3>${d.title}</h3><div class="rating">${d.rating}</div><div class="rich-text-content">${d.content}</div></div></div>`);
+            const grid = document.getElementById('dynamic-projects'); grid.innerHTML = '';
+            const projSnap = await getDocs(query(collection(db, 'projects'), orderBy("timestamp", "desc")));
+            projSnap.forEach(doc => grid.innerHTML += `<div class="card">${isAdminLoggedIn ? `<div class="admin-actions"><button class="action-btn btn-edit" onclick="editItem('projects','${doc.id}')">Edit</button><button class="action-btn btn-delete" onclick="deleteItem('projects','${doc.id}')">Delete</button></div>` : ''}<h3>${doc.data().title}</h3><div class="rich-text-content">${doc.data().desc}</div><a href="${doc.data().link}" target="_blank" class="btn">View Live</a></div>`);
+
+            const blogSnap = await getDocs(query(collection(db, 'blogs'), orderBy("timestamp", "desc")));
+            allBlogs = blogSnap.docs.map(doc => ({ data: doc.data(), id: doc.id }));
+            renderBlogs();
+
+            const reviewSnap = await getDocs(query(collection(db, 'reviews'), orderBy("timestamp", "desc")));
+            allReviews = reviewSnap.docs.map(doc => ({ data: doc.data(), id: doc.id }));
+            renderReviewTagFilters();
+            renderReviews();
         }
     </script>
 </body>
