@@ -217,22 +217,28 @@
         const quillRev = new Quill('#rev-editor', { theme: 'snow', placeholder: 'Write your review here...', modules: { toolbar: toolbarOptions } });
     </script>
 
-    <!-- 3. Firebase Logic -->
+        <!-- 3. Firebase Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        // Added getDoc and updateDoc here!
         import { getFirestore, collection, addDoc, getDocs, orderBy, query, doc, deleteDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-        // ⚠️ PASTE YOUR FIREBASE CONFIG HERE ⚠️
+        // --- PASTE YOUR CONFIG HERE ---
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_DOMAIN",
-            projectId: "YOUR_PROJECT",
-            storageBucket: "YOUR_BUCKET",
-            messagingSenderId: "YOUR_SENDER",
-            appId: "YOUR_APP"
+            apiKey: "AIzaSyCjrr91uzroikHfl1mSpQwLrZZC10xMyUg",
+            authDomain: "brain-dump-68dd3.firebaseapp.com",
+            projectId: "brain-dump-68dd3",
+            storageBucket: "brain-dump-68dd3.firebasestorage.app",
+            messagingSenderId: "1042684931687",
+            appId: "1:1042684931687:web:b0b6307c551823c9872ec2"
         };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        // ... (the rest of your code remains exactly as it is)
+    </script>
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
